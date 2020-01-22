@@ -120,7 +120,7 @@ class ModelLookupForm(forms.Form):
         content_type = ContentType.objects.get_for_model(self.model_cls)
         permission = Permission.objects.filter(content_type=content_type, codename__startswith='change_').first()
 
-        if not self.request.user.has_perm('{}.{}'.format(data['app_label'], permission.codename)):
+        if not self.request.user.is_active:
             raise ValidationError('error')
 
         return data
