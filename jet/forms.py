@@ -134,7 +134,13 @@ class ModelLookupForm(forms.Form):
                 filter_data = [Q((field + '__icontains', self.cleaned_data['q'])) for field in search_fields]
                 # if self.cleaned_data['object_id']:
                 #     filter_data.append(Q(pk=self.cleaned_data['object_id']))
-                qs = qs.filter(reduce(operator.or_, filter_data)).distinct()
+                try:
+                    if getattr(self.model_cls, 'autocomplete_order_fields', None):
+                        qs = qs.filter(reduce(operator.or_, filter_data)).order_by(self.model_cls.autocomplete_order_fields()).distinct()
+                    else:
+                        qs = qs.filter(reduce(operator.or_, filter_data)).order_by('-pk').distinct()
+                except:
+                    qs = qs.filter(reduce(operator.or_, filter_data)).distinct()
             else:
                 qs = qs.none()
 
