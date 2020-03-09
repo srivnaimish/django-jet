@@ -131,16 +131,21 @@ class ModelLookupForm(forms.Form):
         if self.cleaned_data['q']:
             if getattr(self.model_cls, 'autocomplete_search_fields', None):
                 search_fields = self.model_cls.autocomplete_search_fields()
-                filter_data = [Q((field + '__icontains', self.cleaned_data['q'])) for field in search_fields]
+                reduce_opertaor = operator.or_
+                if getattr(self.model_cls, 'generate_autocomplete_filter', None):
+                    filter_data, reduce_opertaor = self.model_cls.generate_autocomplete_filter(self.cleaned_data['q'])
+                else:
+                    filter_data = [Q((field + '__icontains', self.cleaned_data['q'])) for field in search_fields]
                 # if self.cleaned_data['object_id']:
                 #     filter_data.append(Q(pk=self.cleaned_data['object_id']))
                 try:
                     if getattr(self.model_cls, 'autocomplete_order_fields', None):
-                        qs = qs.filter(reduce(operator.or_, filter_data)).order_by(self.model_cls.autocomplete_order_fields()).distinct()
+                        qs = qs.filter(reduce(reduce_opertaor, filter_data)).order_by(self.model_cls.autocomplete_order_fields()).distinct()
                     else:
-                        qs = qs.filter(reduce(operator.or_, filter_data)).order_by('-pk').distinct()
+                        qs = qs.filter(reduce(reduce_opertaor, filter_data)).order_by('-pk').distinct()
                 except:
-                    qs = qs.filter(reduce(operator.or_, filter_data)).distinct()
+                    qs = qs.filter(reduce(reduce_opertaor, filter_data)).distinct()
+
             else:
                 qs = qs.none()
 
