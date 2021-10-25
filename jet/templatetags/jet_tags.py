@@ -75,7 +75,8 @@ def jet_select2_lookups(field):
                 'class': 'ajax',
                 'data-app-label': app_label,
                 'data-model': model_name,
-                'data-ajax--url': reverse('jet:model_lookup')
+                'data-field-name': field.name,
+                'data-ajax--url': reverse('jet:model_lookup')+ f"?field_name={field.name}"
             }
 
             initial_value = field.value()
