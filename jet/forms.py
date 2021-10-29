@@ -1,9 +1,12 @@
 import json
+from urllib.parse import urlparse
+
 from django import forms
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.urls import resolve
 import operator
 
 from jet.models import Bookmark, PinnedApplication
@@ -128,8 +131,19 @@ class ModelLookupForm(forms.Form):
     def lookup(self):
         qs = self.model_cls.objects
 
-        if self.cleaned_data['q']:
-            if getattr(self.model_cls, 'autocomplete_search_fields', None):
+        if getattr(self.model_cls, "jet_lookup_queryset"):
+            ctx_info = resolve(
+                urlparse(
+                    self.request.META.get("HTTP_REFERER", None)
+                    or self.request.path_info
+                ).path
+            )
+            ctx_info.field_name = self.request.GET.get("field_name")
+            qs = self.model_cls.jet_lookup_queryset(
+                self.request, ctx_info
+            )  # custom queryset from model class
+        if self.cleaned_data["q"]:
+            if getattr(self.model_cls, "autocomplete_search_fields", None):
                 search_fields = self.model_cls.autocomplete_search_fields()
                 reduce_opertaor = operator.or_
                 if getattr(self.model_cls, 'generate_autocomplete_filter', None):
