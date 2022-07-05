@@ -129,6 +129,12 @@ class ModelLookupForm(forms.Form):
         qs = self.model_cls.objects
 
         if self.cleaned_data['q']:
+            if self.cleaned_data.get('cf'):
+                try:
+                    custom_filters = json.loads(self.cleaned_data['cf'])
+                    qs = qs.filter(**custom_filters).order_by('-pk').distinct()
+                except:
+                    pass
             if getattr(self.model_cls, 'autocomplete_search_fields', None):
                 search_fields = self.model_cls.autocomplete_search_fields()
                 reduce_opertaor = operator.or_
