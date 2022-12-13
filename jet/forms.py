@@ -129,25 +129,33 @@ class ModelLookupForm(forms.Form):
         qs = self.model_cls.objects
 
         if self.cleaned_data['q']:
-            if getattr(self.model_cls, 'autocomplete_search_fields', None):
-                search_fields = self.model_cls.autocomplete_search_fields()
-                reduce_opertaor = operator.or_
-                if getattr(self.model_cls, 'generate_autocomplete_filter', None):
-                    filter_data, reduce_opertaor = self.model_cls.generate_autocomplete_filter(self.cleaned_data['q'])
-                else:
-                    filter_data = [Q((field + '__icontains', self.cleaned_data['q'])) for field in search_fields]
-                # if self.cleaned_data['object_id']:
-                #     filter_data.append(Q(pk=self.cleaned_data['object_id']))
+            if "lookup_filters" in self.cleaned_data['q']:
                 try:
-                    if getattr(self.model_cls, 'autocomplete_order_fields', None):
-                        qs = qs.filter(reduce(reduce_opertaor, filter_data)).order_by(self.model_cls.autocomplete_order_fields()).distinct()
-                    else:
-                        qs = qs.filter(reduce(reduce_opertaor, filter_data)).order_by('-pk').distinct()
-                except:
-                    qs = qs.filter(reduce(reduce_opertaor, filter_data)).distinct()
-
+                    cleaned_query = self.cleaned_data['q']
+                    custom_filters = json.loads(cleaned_query).get('lookup_filters')
+                    qs = qs.filter(**custom_filters).order_by('-pk').distinct()
+                except Exception as e:
+                    print(str(e))
             else:
-                qs = qs.none()
+                if getattr(self.model_cls, 'autocomplete_search_fields', None):
+                    search_fields = self.model_cls.autocomplete_search_fields()
+                    reduce_opertaor = operator.or_
+                    if getattr(self.model_cls, 'generate_autocomplete_filter', None):
+                        filter_data, reduce_opertaor = self.model_cls.generate_autocomplete_filter(self.cleaned_data['q'])
+                    else:
+                        filter_data = [Q((field + '__icontains', self.cleaned_data['q'])) for field in search_fields]
+                    # if self.cleaned_data['object_id']:
+                    #     filter_data.append(Q(pk=self.cleaned_data['object_id']))
+                    try:
+                        if getattr(self.model_cls, 'autocomplete_order_fields', None):
+                            qs = qs.filter(reduce(reduce_opertaor, filter_data)).order_by(self.model_cls.autocomplete_order_fields()).distinct()
+                        else:
+                            qs = qs.filter(reduce(reduce_opertaor, filter_data)).order_by('-pk').distinct()
+                    except:
+                        qs = qs.filter(reduce(reduce_opertaor, filter_data)).distinct()
+
+                else:
+                    qs = qs.none()
 
         limit = self.cleaned_data['page_size'] or 100
         page = self.cleaned_data['page'] or 1
