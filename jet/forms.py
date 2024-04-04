@@ -126,7 +126,10 @@ class ModelLookupForm(forms.Form):
         return data
 
     def lookup(self):
-        qs = self.model_cls.objects
+        if hasattr(self.model_cls, 'get_custom_db_manager'):
+            qs = self.model_cls.get_custom_db_manager()
+        else:
+            qs = self.model_cls.objects
 
         if self.cleaned_data['q']:
             if "lookup_filters" in self.cleaned_data['q']:
